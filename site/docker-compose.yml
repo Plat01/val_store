@@ -25,6 +25,8 @@ x-wp-volumes: &wp-volumes
   - ./config/php.ini:/usr/local/etc/php/conf.d/zz-soberi-stanok.ini:ro
   - ./scripts:/scripts:ro
   - ./data:/data
+  # Медиатека старого сайта (UPLOADS = 'files'), нужна только для импорта.
+  - ${OLD_FILES:-../old_site/public_html/files}:/old-files:ro
 
 services:
   db:

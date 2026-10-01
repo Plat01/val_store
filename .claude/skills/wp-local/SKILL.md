@@ -15,6 +15,7 @@ description: Локальное окружение WordPress «собери ст
 | PHP-код в контексте WP | `./bin/wp eval '…'` или `./bin/wp eval-file /scripts/x.php` |
 | Лог PHP | `tail -f wp/wp-content/debug.log` |
 | phpMyAdmin | `docker compose --profile tools up -d phpmyadmin` → http://localhost:8081 |
+| Импорт каталога со старого сайта | `./scripts/import-old.sh [дамп.sql[.gz]]` (идемпотентно, отчёт URL → `data/url-map.csv`) |
 | Полный сброс | `docker compose down -v && rm -rf wp && ./scripts/bootstrap.sh` |
 
 - Сайт http://localhost:8080, админка `/wp-admin` (admin / admin).
@@ -36,3 +37,12 @@ description: Локальное окружение WordPress «собери ст
 - Не править файлы в `wp/` — они перезаписываются.
 - Ради проверки изменений темы перезапуск не нужен (bind mount).
 - После изменения правил ссылок: `./bin/wp rewrite flush --hard`.
+
+## Импорт каталога (`scripts/import/import-old.php`)
+- Источник: БД `old` (дамп старого сайта, префикс `wp_`) + картинки из `$OLD_FILES` → `/old-files`
+  (на старом сайте `UPLOADS = 'files'`, медиатека лежала в `public_html/files/`).
+- Связь со старыми сущностями — мета `_ss_old_id` (товары, вариации, вложения, категории).
+- URL товара = основная категория (`rank_math_primary_product_cat`, из Yoast старого сайта) +
+  Premmerce Permalink Manager (hierarchical) → `/категория/подкатегория/товар/`, как на старом сайте.
+- Cyr-To-Lat обязателен: ключи локальных атрибутов вариаций транслитерированы (`Модель` → `model`).
+- Единица измерения товара — мета `_ss_unit` («м», «шт»).
