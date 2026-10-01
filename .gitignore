@@ -1,0 +1,8 @@
+old_site/
+site/.env
+site/wp/
+site/data/
+*.sql
+*.sql.gz
+node_modules/
+.DS_Store
