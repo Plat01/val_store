@@ -8,4 +8,5 @@ flamingo
 fluent-smtp
 webp-converter-for-media
 limit-login-attempts-reloaded
+woo-permalink-manager
 "
