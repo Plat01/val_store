@@ -32,6 +32,7 @@ wp option update woocommerce_currency_pos 'right_space'
 wp option update woocommerce_price_thousand_sep ' '
 wp option update woocommerce_price_decimal_sep ','
 wp option update woocommerce_price_num_decimals 0
+wp option update woocommerce_default_catalog_orderby 'date'
 wp option update woocommerce_weight_unit 'kg'
 wp option update woocommerce_dimension_unit 'cm'
 wp option update woocommerce_calc_taxes 'no'

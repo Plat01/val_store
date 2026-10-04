@@ -12,7 +12,7 @@ test('Фильтр атрибута и цены, сброс, сортировк�
   expect(before).toBeGreaterThan(0);
   await expect(page.locator('ul.products')).not.toContainText('86HS');
   await page.locator('.ss-filters').evaluate(e=>e.open=true);
-  await page.locator('input[name="max_price"]').fill('1600');
+  await page.getByRole('spinbutton',{name:'Цена до, ₽',exact:true}).fill('1600');
   await page.getByRole('button',{name:'Применить',exact:true}).click();
   await expect(page.locator('ul.products')).not.toContainText('86HS');
   const prices=await page.locator('ul.products .price').allTextContents();
@@ -20,13 +20,41 @@ test('Фильтр атрибута и цены, сброс, сортировк�
   for(const price of prices)expect(Number(price.replace(/[^0-9]/g,''))).toBeLessThanOrEqual(1600);
   await page.getByRole('link',{name:'Сбросить фильтры',exact:true}).click();
   await expect(page).not.toHaveURL(/filter_tiporazmer/);
+  await expect(page.locator('select.orderby option[value="menu_order"]')).toHaveCount(0);
+  await expect(page.locator('select.orderby')).toHaveValue('date');
   await page.locator('select.orderby').selectOption('price');
   await expect(page).toHaveURL(/orderby=price/);
+  const sortedPrices=await page.locator('ul.products .price .woocommerce-Price-amount').allTextContents();
+  const numbers=sortedPrices.map(price=>Number(price.replace(/[^0-9]/g,'')));
+  expect(numbers.length).toBeGreaterThan(1);
+  expect(numbers).toEqual([...numbers].sort((a,b)=>a-b));
   await page.locator('#ss-search-input').fill('57HS56-3004');
   await page.getByRole('button',{name:'Найти товар',exact:true}).click();
   await expect(page.getByRole('link',{name:'Шаговый двигатель 57HS56-3004',exact:true}).first()).toBeVisible();
   await page.getByRole('link',{name:'Шаговый двигатель 57HS56-3004',exact:true}).first().click();
   await expect(page).toHaveURL(new RegExp(product));
+});
+
+test('Сортировка цены сохраняет фильтр и работает в обе стороны',async({page})=>{
+  await page.goto('/catalog/dvigateli/shagovye-dvigateli/?filter_tiporazmer=nema23&max_price=2600');
+  for(const order of ['price-desc','price']){
+    await page.locator('select.orderby').selectOption(order);
+    await expect(page).toHaveURL(new RegExp(`orderby=${order}(?:&|$)`));
+    await expect(page).toHaveURL(/filter_tiporazmer=nema23/);
+    await expect(page).toHaveURL(/max_price=2600/);
+    await expect(page.locator('select.orderby')).toHaveValue(order);
+    await expect(page.locator('ul.products')).not.toContainText('86HS');
+    const amounts=await page.locator('ul.products .price .woocommerce-Price-amount').allTextContents();
+    const prices=amounts.map(amount=>Number(amount.replace(/[^0-9]/g,'')));
+    expect(prices.length).toBeGreaterThan(1);
+    expect(prices.every(price=>price<=2600)).toBe(true);
+    expect(prices).toEqual([...prices].sort((a,b)=>order==='price'?a-b:b-a));
+  }
+  await page.locator('.ss-filters').evaluate(e=>e.open=true);
+  await page.getByRole('spinbutton',{name:'Цена до, ₽',exact:true}).fill('1600');
+  await page.getByRole('button',{name:'Применить',exact:true}).click();
+  await expect(page).toHaveURL(/orderby=price/);
+  await expect(page.locator('select.orderby')).toHaveValue('price');
 });
 
 test('Плашки вариаций выбирают штатную модель WooCommerce',async({page})=>{

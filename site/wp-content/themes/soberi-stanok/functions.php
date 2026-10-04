@@ -57,6 +57,11 @@ add_filter('woocommerce_breadcrumb_defaults', static function ($args) {
 // Описание категории находится под товарами.
 remove_action('woocommerce_archive_description', 'woocommerce_taxonomy_archive_description', 10);
 add_filter('loop_shop_per_page', static fn() => 12);
+// В каталоге доступны только явно названные способы сортировки.
+add_filter('woocommerce_catalog_orderby', static function (array $options): array {
+    unset($options['menu_order']);
+    return $options;
+});
 // Поиск точного артикула, включая артикул вариации (ведёт к её товару).
 add_filter('posts_search', static function ($search,$query) {
     if(is_admin() || !$query->is_main_query() || !$query->is_search() || $query->get('post_type')!=='product') return $search;

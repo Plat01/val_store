@@ -39,3 +39,7 @@
     document.addEventListener('click', function(e) { if (!menu.contains(e.target)) menu.open = false; });
   });
 })();
+// Сортировка работает без загрузки общего jQuery-скрипта WooCommerce.
+document.querySelectorAll('.woocommerce-ordering select.orderby').forEach(function (select) {
+  select.addEventListener('change', function () { select.form.requestSubmit(); });
+});
