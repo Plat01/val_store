@@ -23,3 +23,7 @@ if [ $# -ge 1 ]; then
 fi
 
 ./bin/wp eval-file /scripts/import/import-old.php
+
+# SEO/alt и WebP также после повторного импорта свежего дампа.
+./bin/wp eval-file /scripts/setup-seo.php
+./bin/wp webp-converter regenerate --force

@@ -10,6 +10,7 @@ test('Все импортированные URL открываются; стар
     const [type,oldId,newId,url,oldUrl]=row.split(',');
     const response=await request.get(url,{maxRedirects:0});
     expect(response.status(),url).toBe(200);
+    expect((await response.text()).match(/<h1(?:\s|>)/gi)?.length,url+" — один H1").toBe(1);
     const oldResponse=await request.get(oldUrl,{maxRedirects:0});
     expect(oldResponse.status(),oldUrl).toBe(301);
     expect(new URL(oldResponse.headers().location).pathname,oldUrl).toBe(url);

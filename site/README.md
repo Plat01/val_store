@@ -1,4 +1,4 @@
-# Локальный магазин «собери станок»: этапы 0–5
+# Локальный магазин «собери станок»: этапы 0–6
 
 ## Запуск
 
@@ -71,8 +71,7 @@ Playwright проверяет всю карту URL, 301 без цепочек, 
 Тест создаёт локальный заказ для `playwright-…@example.test`.
 
 Lighthouse установлен и запускается командой `npm run lighthouse -- URL`.
-Целевые оценки и финальная вёрстка относятся к этапам 4–6; сейчас тема —
-минимальный FSE-каркас с шаблонами WooCommerce.
+Результаты готовой темы и SEO-фундамента приведены в разделах этапов 5 и 6 ниже.
 
 ## Инструменты Codex
 
@@ -154,3 +153,63 @@ Apple touch — PNG 180×180, OG по умолчанию — PNG 1200×630. Из
 
 API дополнительного checkout-поля:
 [официальная документация WooCommerce](https://developer.woocommerce.com/docs/block-development/extensible-blocks/cart-and-checkout-blocks/additional-checkout-fields/).
+
+## Этап 6: SEO и скорость
+
+Настройки Rank Math воспроизводятся через `scripts/setup-seo.sh` →
+`setup-seo.php` (подключены к `setup.sh`). Повторный импорт также применяет
+SEO-настройки/alt и выполняет WebP-конвертацию. Оригиналы изображений сохранены;
+Converter for Media отдаёт WebP по `Accept`, с исходным форматом как fallback.
+906 файлов обработано, экономия около 110 МБ. Manrope — локальный woff2,
+441 символ, кириллица/латиница, preload и `font-display: swap`.
+
+Товары и категории получают шаблоны title/description, Open Graph и canonical.
+Canonical пагинации указывает на саму страницу. Фильтры, сортировка, поиск,
+корзина, оформление и аккаунт закрыты `noindex`; служебные страницы исключены
+из sitemap. Rank Math: `/sitemap_index.xml` (также штатный `/sitemap.xml`).
+В режиме запуска robots содержит исключения и Яндекс `Clean-param` по реальным
+атрибутам (правила разбиты на строки короче 500 символов согласно
+[ограничению Яндекса](https://yandex.ru/support/webmaster/ru/robot-workings/clean-param)).
+При `blog_public=0`: `Disallow: /`, все страницы `noindex,nofollow`.
+Этап 6 не открывает индексацию — это этап 8.
+
+JSON-LD формирует Rank Math с дополнениями mu-plugin: единая Organization с
+логотипом, Product/Offer или AggregateOffer, BreadcrumbList по видимым крошкам,
+FAQPage с теми же вопросами и ответами, что на главной. Store (подтип
+LocalBusiness) появляется после заполнения контактов; заглушки не выдаются за
+реальный бизнес. Часы вида `Пн–Пт: 10:00–19:00` преобразуются в openingHours.
+Бренд товара указывается только при наличии атрибута бренда/производителя.
+Пустой бренд не заменяется именем магазина.
+
+В «Данных магазина» вводятся номер Метрики и content-код Вебмастера.
+Метрика подключается после разрешения аналитики, согласие можно изменить
+кнопкой в подвале. Цели типа JavaScript-событие в кабинете Метрики:
+`order`, `phone`, `messenger`, `form`. E-commerce: `detail`, `add`, `purchase`
+в `dataLayer`; покупка доступна только по корректному ключу заказа и защищена
+от повторной отправки при перезагрузке в том же браузере. Суммы/товары передаются
+без имени, телефона и email покупателя. Пока номер не заполнен, счётчик и
+баннер не загружаются. Реальные доступы/проверка получения данных — этап 8.
+[Формат e-commerce Яндекса](https://yandex.ru/support/metrica/ru/ecommerce/data),
+[цели reachGoal](https://yandex.ru/support/metrica/ru/general/goal-js-event),
+[API фильтров Rank Math](https://rankmath.com/kb/filters-hooks-api-developer/).
+
+Проверки этапа 6:
+
+```sh
+npm test
+npm run check:mcp
+site/scripts/verify.sh
+node site/scripts/lighthouse-stage6.cjs
+```
+
+Lighthouse-скрипт **временно** включает `blog_public=1` для проверки режима
+запуска и восстанавливает прежнее значение в `finally`; запускать на локальном
+окружении, отдельно от E2E, которые также проверяют этот режим. Принудительное
+завершение процесса может обойти `finally`: восстановление —
+`cd site && ./bin/wp option update blog_public 0`.
+Отчёты: `site/data/lighthouse/*-launch.json`.
+
+Mobile Lighthouse: главная 100/100/100, категория 100/100/100, товар 97/100/100
+(Performance / Accessibility / SEO). Это локальный аудит без активного внешнего
+счётчика, не замер будущего VPS. Полный повтор нужен после переноса и подключения
+реальной Метрики. При закрытой индексации SEO-балл ниже ожидаемо.
