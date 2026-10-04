@@ -18,13 +18,13 @@ x-wp-env: &wp-env
     define('SS_SMTP_PORT', 1025);
 
 x-wp-volumes: &wp-volumes
-  - ./wp:/var/www/html
+  - ${WP_ROOT:-./wp}:/var/www/html
   - ./wp-content/themes/soberi-stanok:/var/www/html/wp-content/themes/soberi-stanok
   - ./wp-content/mu-plugins:/var/www/html/wp-content/mu-plugins
   - ./config:/config:ro
   - ./config/php.ini:/usr/local/etc/php/conf.d/zz-soberi-stanok.ini:ro
   - ./scripts:/scripts:ro
-  - ./data:/data
+  - ${DATA_ROOT:-./data}:/data
   # Медиатека старого сайта (UPLOADS = 'files'), нужна только для импорта.
   - ${OLD_FILES:-../old_site/public_html/files}:/old-files:ro
 
@@ -69,6 +69,7 @@ services:
         condition: service_healthy
     environment:
       <<: *wp-env
+      WP_URL: ${WP_URL:-http://localhost:8080}
       HOME: /tmp
       WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
     volumes: *wp-volumes

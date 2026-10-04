@@ -7,6 +7,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 set -a; [ -f .env ] && . <(grep -vE "^(UID|GID)=" .env); set +a
 OLD_DB=${OLD_DB:-old}
+[ "$OLD_DB" != "${DB_NAME:-wordpress}" ] || { echo "База источника не должна совпадать с рабочей" >&2; exit 1; }
+[[ "$OLD_DB" =~ ^[a-zA-Z0-9_]+$ ]] || { echo "Недопустимое имя OLD_DB" >&2; exit 1; }
+if [ $# -ge 1 ]; then
+  [ -r "$1" ] || { echo "Дамп недоступен: $1" >&2; exit 1; }
+fi
 
 if [ $# -ge 1 ]; then
   echo "Загружаю дамп $1 в БД $OLD_DB…"

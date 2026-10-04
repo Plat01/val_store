@@ -2,7 +2,7 @@
 /**
  * Импорт товаров, категорий, атрибутов и картинок из базы старого сайта.
  *
- *   ./scripts/import-old.sh            (загрузит дамп в БД `old` и запустит этот файл)
+ *   ./scripts/import-old.sh            (импорт из уже загруженной БД `old`)
  *
  * Идемпотентен: сущности сопоставляются по мета `_ss_old_id`, повторный запуск обновляет их.
  * Переносится только каталог. Страницы, записи, меню, настройки старого сайта — нет.
@@ -180,36 +180,14 @@ $old_cats = $old->get_results("SELECT t.term_id, t.name, t.slug, tt.parent, tt.d
     FROM {$old->terms} t JOIN {$old->term_taxonomy} tt USING (term_id)
     WHERE tt.taxonomy = 'product_cat'", OBJECT_K);
 
-// Количество опубликованных товаров в ветке — пустые ветки не переносим.
-$direct = [];
-foreach ($old->get_results("SELECT tt.term_id, COUNT(DISTINCT p.ID) n FROM {$old->term_relationships} r
-    JOIN {$old->term_taxonomy} tt USING (term_taxonomy_id) JOIN {$old->posts} p ON p.ID = r.object_id
-    WHERE tt.taxonomy = 'product_cat' AND p.post_type = 'product' AND p.post_status = 'publish'
-    GROUP BY tt.term_id") as $row) {
-    $direct[(int) $row->term_id] = (int) $row->n;
-}
-$branch_count = static function (int $id) use (&$branch_count, $old_cats, $direct): int {
-    $n = $direct[$id] ?? 0;
-    foreach ($old_cats as $c) {
-        if ((int) $c->parent === $id) {
-            $n += $branch_count((int) $c->term_id);
-        }
-    }
-    return $n;
-};
-
 $cat_map = [];
 $old_cat_meta = static function (int $term_id, string $key) use ($old) {
     return $old->get_var($old->prepare("SELECT meta_value FROM {$old->termmeta} WHERE term_id = %d AND meta_key = %s", $term_id, $key));
 };
-$import_cat = static function (object $c) use (&$import_cat, &$cat_map, $old_cats, $branch_count, $old_cat_meta) {
+$import_cat = static function (object $c) use (&$import_cat, &$cat_map, $old_cats, $old_cat_meta) {
     $id = (int) $c->term_id;
     if (isset($cat_map[$id])) {
         return $cat_map[$id];
-    }
-    if ($branch_count($id) === 0) {
-        ss_log("  пропуск пустой категории: {$c->name}");
-        return $cat_map[$id] = 0;
     }
     $parent = $c->parent && isset($old_cats[$c->parent]) ? $import_cat($old_cats[$c->parent]) : 0;
     $args = [
@@ -231,9 +209,7 @@ $import_cat = static function (object $c) use (&$import_cat, &$cat_map, $old_cat
     }
     update_term_meta($new_id, 'order', (int) $old_cat_meta($id, 'order'));
     $thumb = ss_import_attachment((int) $old_cat_meta($id, 'thumbnail_id'), $c->slug, $c->name);
-    if ($thumb) {
-        update_term_meta($new_id, 'thumbnail_id', $thumb);
-    }
+    update_term_meta($new_id, 'thumbnail_id', $thumb);
     return $cat_map[$id] = $new_id;
 };
 foreach ($old_cats as $c) {
@@ -301,9 +277,6 @@ $terms_of = static function (int $post_id, string $taxonomy) use ($old): array {
         WHERE r.object_id = %d AND tt.taxonomy = %s ORDER BY t.term_id", $post_id, $taxonomy));
 };
 $set_sku = static function (WC_Product $p, string $sku, string $where) {
-    if ($sku === '') {
-        return;
-    }
     try {
         $p->set_sku($sku);
     } catch (WC_Data_Exception $e) {
@@ -416,8 +389,32 @@ foreach ($products as $op) {
             if (!$options) {
                 continue;
             }
-            $wc_attr->set_name($a['name']);
-            $wc_attr->set_options($options);
+            if (empty($a['is_variation'])) {
+                $slug = substr(sanitize_title($a['name']), 0, 27);
+                $attr_id = wc_attribute_taxonomy_id_by_name($slug);
+                if (!$attr_id) {
+                    $attr_id = wc_create_attribute(['name' => $a['name'], 'slug' => $slug, 'type' => 'select']);
+                    if (is_wp_error($attr_id)) { WP_CLI::error($attr_id->get_error_message()); }
+                    delete_transient('wc_attribute_taxonomies');
+                }
+                $tax = 'pa_' . $slug;
+                if (!taxonomy_exists($tax)) {
+                    register_taxonomy($tax, ['product'], ['hierarchical' => false, 'rewrite' => false]);
+                }
+                $ids = [];
+                foreach ($options as $value) {
+                    $term = term_exists($value, $tax) ?: wp_insert_term($value, $tax);
+                    if (is_wp_error($term)) { WP_CLI::error($term->get_error_message()); }
+                    $ids[] = (int) (is_array($term) ? $term['term_id'] : $term);
+                }
+                $wc_attr->set_id((int) $attr_id);
+                $wc_attr->set_name($tax);
+                $wc_attr->set_options($ids);
+            } else {
+                // Локальные вариационные атрибуты остаются локальными: сохраняем ключи выбора.
+                $wc_attr->set_name($a['name']);
+                $wc_attr->set_options($options);
+            }
             $local_keys[(string) $key] = sanitize_title($a['name']);
         }
         $wc_attr->set_position($position++);
@@ -432,7 +429,7 @@ foreach ($products as $op) {
         $defaults = [];
         foreach ((array) maybe_unserialize($m['_default_attributes'] ?? '') as $k => $v) {
             $k = str_starts_with($k, 'pa_') ? 'pa_' . ($attr_map[substr($k, 3)] ?? substr($k, 3)) : $k;
-            $defaults[$k] = $v;
+            $defaults[$local_keys[$k] ?? $k] = $v;
         }
         $product->set_default_attributes($defaults);
     }
@@ -490,10 +487,12 @@ foreach ($products as $op) {
             $var->set_stock_quantity((int) ($vm['_stock'] ?? 0));
         }
         $var->set_stock_status($vm['_stock_status'] ?? 'instock');
+        $var->set_backorders($vm['_backorders'] ?? 'no');
         $var->set_description(ss_clean_html((string) ($vm['_variation_description'] ?? '')));
         foreach (['weight', 'length', 'width', 'height'] as $dim) {
             $var->{"set_$dim"}($num($vm["_$dim"] ?? ''));
         }
+        $var->set_image_id(0);
         if (!empty($vm['_thumbnail_id'])) {
             $var->set_image_id(ss_import_attachment((int) $vm['_thumbnail_id'], $op->post_name . '-' . sanitize_title(implode('-', $vattrs)), $op->post_title));
         }
@@ -536,20 +535,41 @@ wc_delete_product_transients();
 wc_update_product_lookup_tables();
 flush_rewrite_rules(false);
 
+// Старые URL → новые: мета хранит ID записи Rank Math для повторного импорта.
+function ss_import_redirect(string $from, string $to, int $id, bool $term = false): void {
+    if ($from === $to) { return; }
+    $key = '_ss_redirect_id';
+    $rid = (int) ($term ? get_term_meta($id, $key, true) : get_post_meta($id, $key, true));
+    $redirect = \RankMath\Redirections\Redirection::from([
+        'id' => $rid, 'sources' => [['pattern' => trim($from, '/'), 'comparison' => 'exact']],
+        'url_to' => home_url($to), 'header_code' => 301, 'status' => 'active',
+    ]);
+    $saved = $redirect->save();
+    if (!$saved) { WP_CLI::error('Не удалось создать редирект: ' . $from); }
+    $term ? update_term_meta($id, $key, $saved) : update_post_meta($id, $key, $saved);
+}
+
+
 // ---------------------------------------------------------------------------
 // Отчёт и карта URL
 // ---------------------------------------------------------------------------
 
 $csv = fopen('/data/url-map.csv', 'w');
-fputcsv($csv, ['type', 'old_id', 'new_id', 'path']);
+fputcsv($csv, ['type', 'old_id', 'new_id', 'path', 'old_path']);
 foreach ($cat_map as $o => $n) {
     if ($n) {
-        fputcsv($csv, ['category', $o, $n, wp_make_link_relative(get_term_link($n, 'product_cat'))]);
+        $path = wp_make_link_relative(get_term_link($n, 'product_cat'));
+        $old_path = preg_replace('~^/catalog/~', '/', $path);
+        ss_import_redirect($old_path, $path, $n, true);
+        fputcsv($csv, ['category', $o, $n, $path, $old_path]);
     }
 }
 foreach ($product_map as $o => $n) {
     if (get_post_status($n) === 'publish') {
-        fputcsv($csv, ['product', $o, $n, wp_make_link_relative(get_permalink($n))]);
+        $path = wp_make_link_relative(get_permalink($n));
+        $old_path = preg_replace('~^/catalog/~', '/', $path);
+        ss_import_redirect($old_path, $path, $n);
+        fputcsv($csv, ['product', $o, $n, $path, $old_path]);
     }
 }
 fclose($csv);

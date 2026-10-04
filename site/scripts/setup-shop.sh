@@ -90,21 +90,20 @@ wp option update woocommerce_pickup_location_settings '{
 }' --format=json
 wp eval 'ss_shop_sync_pickup();'
 
-# --- Ссылки как на старом сайте ---------------------------------------------
-# /категория/подкатегория/ и /категория/подкатегория/товар/ (Premmerce Permalink Manager).
-wp option update premmerce_permalink_manager '{
-  "category": "hierarchical",
-  "product": "hierarchical",
-  "use_primary_category": "on",
-  "canonical": ""
-}' --format=json
+# --- URL каталога: /catalog/категория/товар/ ---------------------------------
+wp plugin deactivate woo-permalink-manager >/dev/null 2>&1 || true
 wp option update woocommerce_permalinks '{
   "product_base": "/catalog/%product_cat%/",
-  "category_base": "product-category",
+  "category_base": "catalog",
   "tag_base": "product-tag",
   "attribute_base": "",
   "use_verbose_page_rules": false
 }' --format=json
+# Работа без облачного аккаунта Rank Math (штатный пропуск регистрации).
+wp option update rank_math_registration_skip 1
+wp option update rank_math_is_configured 1
+# Модуль редиректов доступен бесплатно; импорт записывает в него старые адреса.
+wp eval '\RankMath\Installer::create_tables(["redirections"]); $modules = get_option("rank_math_modules", []); $modules[] = "redirections"; update_option("rank_math_modules", array_values(array_unique($modules)));'
 
 # --- Поля оформления (блочный checkout) --------------------------------------
 wp option update woocommerce_checkout_phone_field 'required'

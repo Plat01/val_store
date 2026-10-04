@@ -1,0 +1,239 @@
+{
+  "version": 3,
+  "settings": {
+    "appearanceTools": false,
+    "color": {
+      "custom": false,
+      "customGradient": false,
+      "defaultGradients": false,
+      "defaultPalette": false,
+      "palette": [
+        {
+          "slug": "primary",
+          "name": "primary",
+          "color": "#0ABAB5"
+        },
+        {
+          "slug": "primary-dark",
+          "name": "primary-dark",
+          "color": "#067A76"
+        },
+        {
+          "slug": "primary-soft",
+          "name": "primary-soft",
+          "color": "#E6F8F7"
+        },
+        {
+          "slug": "ink",
+          "name": "ink",
+          "color": "#292D32"
+        },
+        {
+          "slug": "muted",
+          "name": "muted",
+          "color": "#5F656D"
+        },
+        {
+          "slug": "line",
+          "name": "line",
+          "color": "#E2E4E7"
+        },
+        {
+          "slug": "surface",
+          "name": "surface",
+          "color": "#F4F5F6"
+        },
+        {
+          "slug": "base",
+          "name": "base",
+          "color": "#FFFFFF"
+        },
+        {
+          "slug": "danger",
+          "name": "danger",
+          "color": "#C9372C"
+        },
+        {
+          "slug": "success",
+          "name": "success",
+          "color": "#1E7F4F"
+        }
+      ]
+    },
+    "layout": {
+      "contentSize": "1280px",
+      "wideSize": "1280px"
+    },
+    "spacing": {
+      "units": [
+        "px",
+        "rem",
+        "%"
+      ],
+      "spacingSizes": [
+        {
+          "slug": "4",
+          "name": "4 px",
+          "size": "4px"
+        },
+        {
+          "slug": "8",
+          "name": "8 px",
+          "size": "8px"
+        },
+        {
+          "slug": "16",
+          "name": "16 px",
+          "size": "16px"
+        },
+        {
+          "slug": "24",
+          "name": "24 px",
+          "size": "24px"
+        },
+        {
+          "slug": "32",
+          "name": "32 px",
+          "size": "32px"
+        },
+        {
+          "slug": "40",
+          "name": "40 px",
+          "size": "40px"
+        },
+        {
+          "slug": "48",
+          "name": "48 px",
+          "size": "48px"
+        },
+        {
+          "slug": "64",
+          "name": "64 px",
+          "size": "64px"
+        },
+        {
+          "slug": "80",
+          "name": "80 px",
+          "size": "80px"
+        },
+        {
+          "slug": "96",
+          "name": "96 px",
+          "size": "96px"
+        }
+      ]
+    },
+    "typography": {
+      "defaultFontSizes": false,
+      "fontFamilies": [
+        {
+          "slug": "manrope",
+          "name": "Manrope",
+          "fontFamily": "Manrope, \"Segoe UI\", system-ui, sans-serif",
+          "fontFace": [
+            {
+              "fontFamily": "Manrope",
+              "fontStyle": "normal",
+              "fontWeight": "400 800",
+              "src": [
+                "file:./assets/fonts/manrope-variable.woff2"
+              ]
+            }
+          ]
+        }
+      ],
+      "fontSizes": [
+        {
+          "slug": "s0",
+          "name": "0.8125 rem",
+          "size": "0.8125rem"
+        },
+        {
+          "slug": "s1",
+          "name": "0.875 rem",
+          "size": "0.875rem"
+        },
+        {
+          "slug": "s2",
+          "name": "1 rem",
+          "size": "1rem"
+        },
+        {
+          "slug": "s3",
+          "name": "1.125 rem",
+          "size": "1.125rem"
+        },
+        {
+          "slug": "s4",
+          "name": "1.375 rem",
+          "size": "1.375rem"
+        },
+        {
+          "slug": "s5",
+          "name": "1.75 rem",
+          "size": "1.75rem"
+        },
+        {
+          "slug": "s6",
+          "name": "2.25 rem",
+          "size": "2.25rem"
+        },
+        {
+          "slug": "s7",
+          "name": "3 rem",
+          "size": "3rem"
+        }
+      ]
+    },
+    "custom": {
+      "radius": {
+        "none": "0px",
+        "small": "4px"
+      },
+      "cut": "10px",
+      "gridColumns": 12,
+      "gutter": "clamp(16px, 3vw, 32px)",
+      "transition": "150ms"
+    }
+  },
+  "styles": {
+    "color": {
+      "background": "var:preset|color|base",
+      "text": "var:preset|color|ink"
+    },
+    "spacing": {
+      "blockGap": "var:preset|spacing|24"
+    },
+    "typography": {
+      "fontFamily": "var:preset|font-family|manrope",
+      "fontSize": "var:preset|font-size|s2",
+      "fontWeight": "400",
+      "lineHeight": "1.6"
+    },
+    "elements": {
+      "heading": {
+        "typography": {
+          "fontWeight": "800",
+          "lineHeight": "1.15"
+        }
+      },
+      "link": {
+        "color": {
+          "text": "var:preset|color|primary-dark"
+        }
+      }
+    }
+  },
+  "templateParts": [
+    {
+      "name": "header",
+      "title": "Шапка магазина",
+      "area": "header"
+    },
+    {
+      "name": "footer",
+      "title": "Подвал магазина",
+      "area": "footer"
+    }
+  ]
+}
