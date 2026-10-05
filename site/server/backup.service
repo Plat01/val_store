@@ -1,0 +1,9 @@
+[Unit]
+Description=Собери станок — backup DB, files and server config
+After=mariadb.service
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/opt/soberi-stanok/scripts/server/backup.sh
+Nice=10
+IOSchedulingClass=idle

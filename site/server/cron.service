@@ -1,0 +1,9 @@
+[Unit]
+Description=Собери станок — WordPress scheduled events
+After=mariadb.service redis-server.service
+[Service]
+Type=oneshot
+User=soberi-stanok
+Group=soberi-stanok
+UMask=0027
+ExecStart=/usr/local/bin/wp --path=/var/www/soberi-stanok/public cron event run --due-now --quiet
